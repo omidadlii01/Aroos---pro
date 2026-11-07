@@ -17,6 +17,9 @@ export function SiteHeader() {
           <Link href="/" className="rounded-lg px-3 py-1.5 text-slate-600 hover:bg-sand-100">
             خانه
           </Link>
+          <Link href="/boutiques" className="rounded-lg px-3 py-1.5 text-slate-600 hover:bg-sand-100">
+            کاتالوگ لباس
+          </Link>
           <Link href="/login" className="rounded-lg px-3 py-1.5 text-slate-600 hover:bg-sand-100">
             ورود
           </Link>

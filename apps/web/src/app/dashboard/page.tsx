@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -267,6 +268,18 @@ export default function DashboardPage() {
                         ارسال برای بررسی
                       </Button>
                     ) : null}
+                    <Link
+                      href="/dashboard/dresses"
+                      className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      لباس‌ها
+                    </Link>
+                    <Link
+                      href="/dashboard/team"
+                      className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      کارکنان
+                    </Link>
                   </div>
                 </li>
               ))}

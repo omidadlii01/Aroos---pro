@@ -2,7 +2,14 @@ import { z } from 'zod';
 
 import { isValidOtpCode, normalizeOtpCode } from './otp.js';
 import { parseIranianMobile } from './phone.js';
-import { BOUTIQUE_STATUSES, ROLES, type BoutiqueStatus, type Role } from './roles.js';
+import {
+  BOUTIQUE_STATUSES,
+  DRESS_CATEGORIES,
+  DRESS_STATUSES,
+  ROLES,
+  type BoutiqueStatus,
+  type Role,
+} from './roles.js';
 
 /** شماره موبایل ایران → همیشه به `09xxxxxxxxx` نرمال می‌شود. */
 export const IranianMobileSchema = z
@@ -133,3 +140,130 @@ export type AuthSessionResponse = {
 
 export const roleSchema = z.enum(ROLES);
 export const boutiqueStatusSchema = z.enum(BOUTIQUE_STATUSES);
+
+/* ------------------------------------------------------------------ */
+/* اعضای مزون (خانواده/کارکنان)                                        */
+/* ------------------------------------------------------------------ */
+
+export const MemberRoleSchema = z.enum(['branch_manager', 'boutique_staff']);
+
+export const MemberInviteSchema = z.object({
+  phone: IranianMobileSchema,
+  role: MemberRoleSchema,
+});
+
+export const MemberRoleUpdateSchema = z.object({
+  role: MemberRoleSchema,
+});
+
+export type MemberInviteInput = z.infer<typeof MemberInviteSchema>;
+
+export type BoutiqueMemberView = {
+  userId: string;
+  displayName: string | null;
+  phoneMasked: string;
+  role: Role;
+  invitedAt: string;
+  revokedAt: string | null;
+};
+
+/* ------------------------------------------------------------------ */
+/* لباس (کاتالوگ)                                                      */
+/* ------------------------------------------------------------------ */
+
+const ShortAttribute = z
+  .string()
+  .trim()
+  .max(40, 'حداکثر ۴۰ نویسه')
+  .optional();
+
+/** قیمت‌ها از فرم به **تومان** می‌آیند و سرویس آن‌ها را به ریال تبدیل می‌کند. */
+const TomanAmount = z
+  .number({ error: 'مبلغ باید عدد باشد' })
+  .int('مبلغ باید عدد صحیح باشد')
+  .min(0, 'مبلغ نمی‌تواند منفی باشد')
+  .max(1_000_000_000_000, 'مبلغ خارج از محدوده مجاز است')
+  .optional();
+
+export const DressCreateSchema = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9-]{2,32}$/, 'کد لباس باید ۲ تا ۳۲ نویسه لاتین/رقم/خط تیره باشد'),
+    name: PersianText(2, 120, 'نام لباس'),
+    description: PersianText(0, 3000, 'توضیحات').optional(),
+    category: z.enum(DRESS_CATEGORIES).default('wedding'),
+    silhouette: ShortAttribute,
+    neckline: ShortAttribute,
+    sleeve: ShortAttribute,
+    skirt: ShortAttribute,
+    fabric: ShortAttribute,
+    embellishment: ShortAttribute,
+    color: ShortAttribute,
+    priceMinToman: TomanAmount,
+    priceMaxToman: TomanAmount,
+    sampleAvailable: z.boolean().default(true),
+    orderable: z.boolean().default(false),
+  })
+  .refine(
+    (value) =>
+      value.priceMinToman === undefined ||
+      value.priceMaxToman === undefined ||
+      value.priceMaxToman >= value.priceMinToman,
+    { message: 'بیشترین قیمت نباید کمتر از کمترین قیمت باشد', path: ['priceMaxToman'] },
+  );
+
+export type DressCreateInput = z.infer<typeof DressCreateSchema>;
+
+export const DressUpdateSchema = z
+  .object({
+    name: PersianText(2, 120, 'نام لباس').optional(),
+    description: PersianText(0, 3000, 'توضیحات').optional(),
+    category: z.enum(DRESS_CATEGORIES).optional(),
+    silhouette: ShortAttribute,
+    neckline: ShortAttribute,
+    sleeve: ShortAttribute,
+    skirt: ShortAttribute,
+    fabric: ShortAttribute,
+    embellishment: ShortAttribute,
+    color: ShortAttribute,
+    priceMinToman: TomanAmount,
+    priceMaxToman: TomanAmount,
+    sampleAvailable: z.boolean().optional(),
+    orderable: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'حداقل یک فیلد برای ویرایش لازم است',
+  })
+  .refine(
+    (value) =>
+      value.priceMinToman === undefined ||
+      value.priceMaxToman === undefined ||
+      value.priceMaxToman >= value.priceMinToman,
+    { message: 'بیشترین قیمت نباید کمتر از کمترین قیمت باشد', path: ['priceMaxToman'] },
+  );
+
+export type DressUpdateInput = z.infer<typeof DressUpdateSchema>;
+
+export const DressListQuerySchema = z.object({
+  status: z.enum(DRESS_STATUSES).optional(),
+  q: z.string().trim().max(60).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(60).default(20),
+});
+
+export const PublicCatalogQuerySchema = z.object({
+  city: z
+    .string()
+    .trim()
+    .regex(/^[a-z][a-z0-9-]{1,30}$/)
+    .optional(),
+  category: z.enum(DRESS_CATEGORIES).optional(),
+  priceMaxToman: z.coerce.number().int().min(0).optional(),
+  q: z.string().trim().max(60).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(40).default(12),
+});
+
+export type PublicCatalogQuery = z.infer<typeof PublicCatalogQuerySchema>;

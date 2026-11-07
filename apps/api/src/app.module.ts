@@ -8,7 +8,10 @@ import { LoggerModule } from './common/logger.module.js';
 import { ConfigModule } from './config/config.module.js';
 import type { AppConfig } from './config/config.js';
 import { DatabaseModule } from './database/database.module.js';
+import { DressesModule } from './dresses/dresses.module.js';
 import { HealthModule } from './health/health.module.js';
+import { MediaModule } from './media/media.module.js';
+import { PublicModule } from './public/public.module.js';
 import { TenantsModule } from './tenants/tenants.module.js';
 
 export type AppModuleOptions = {
@@ -25,10 +28,13 @@ export class AppModule {
         ConfigModule.forRoot(config),
         LoggerModule.forRoot(options.logger ?? new JsonLogger(config.logLevel)),
         DatabaseModule.forRoot(config, { migrationsDir: options.migrationsDir }),
+        MediaModule.forRoot(),
         AuditModule,
         AuthModule,
         TenantsModule,
         BoutiquesModule,
+        DressesModule,
+        PublicModule,
         HealthModule,
       ],
     };

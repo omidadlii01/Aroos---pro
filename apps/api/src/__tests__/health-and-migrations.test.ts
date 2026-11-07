@@ -1,3 +1,5 @@
+import { readdir } from 'node:fs/promises';
+
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -5,6 +7,15 @@ import { MIGRATIONS_DIR, createTestApp, type TestContext } from './helpers/test-
 import { runMigrations } from '../database/migrator.js';
 
 let ctx: TestContext;
+
+/** شناسه migrationها از پوشه خوانده می‌شود تا با افزودن migration جدید تست به‌روز بماند. */
+async function migrationIds(): Promise<string[]> {
+  const files = await readdir(MIGRATIONS_DIR);
+  return files
+    .filter((file) => file.endsWith('.sql'))
+    .map((file) => file.replace(/\.sql$/, ''))
+    .sort();
+}
 
 beforeAll(async () => {
   ctx = await createTestApp();
@@ -49,13 +60,15 @@ describe('سلامت سرویس و وضعیت شفاف قابلیت‌ها', () 
 describe('migrationها', () => {
   it('همه migrationها در schema_migrations ثبت شده‌اند', async () => {
     const rows = await ctx.runner.query<{ id: string }>('SELECT id FROM schema_migrations ORDER BY id');
-    expect(rows.map((row) => row.id)).toEqual(['0001_init', '0002_rls']);
+    const expected = await migrationIds();
+    expect(rows.map((row) => row.id)).toEqual(expected);
+    expect(expected.length).toBeGreaterThanOrEqual(4);
   });
 
   it('اجرای دوباره migration چیزی اعمال نمی‌کند (idempotent)', async () => {
     const report = await runMigrations(ctx.runner, { dir: MIGRATIONS_DIR });
     expect(report.applied).toEqual([]);
-    expect(report.alreadyApplied).toEqual(['0001_init', '0002_rls']);
+    expect(report.alreadyApplied).toEqual(await migrationIds());
   });
 
   it('policyهای RLS برای جدول‌های tenant تعریف شده‌اند', async () => {

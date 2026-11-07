@@ -45,6 +45,12 @@ export type AppConfig = {
   sms: {
     driver: 'dev';
   };
+  media: {
+    root: string;
+    maxBytes: number;
+    signedUrlTtlSeconds: number;
+    signingSecret: string;
+  };
 };
 
 export type ConfigLoadResult = { config: AppConfig; warnings: string[] };
@@ -183,6 +189,12 @@ export function loadConfig(env: Env): ConfigLoadResult {
       devEchoOtp,
     },
     sms: { driver: 'dev' },
+    media: {
+      root: (env.MEDIA_ROOT ?? '.data/media').trim(),
+      maxBytes: 8 * 1024 * 1024,
+      signedUrlTtlSeconds: int('MEDIA_SIGNED_URL_TTL_SECONDS', 300, 30, 3600),
+      signingSecret: secret('MEDIA_SIGNING_SECRET', 32),
+    },
   };
 
   if (issues.length > 0) throw new ConfigError(issues);

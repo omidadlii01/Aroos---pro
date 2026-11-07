@@ -51,6 +51,49 @@
 | `PATCH /boutiques/:id` | فقط مالک | `404` اگر مالک نباشد |
 | `POST /boutiques/:id/submit-review` | `draft` → `pending_review` | `409 CONFLICT` در وضعیت دیگر |
 
+## اعضای مزون (کارکنان)
+
+همه مسیرها نیازمند `Authorization` + توکن مزون‌دار (`TenantGuard`) و محدود به مزون فعال هستند.
+
+| مسیر | دسترسی | توضیح | خطاهای مهم |
+| --- | --- | --- | --- |
+| `GET /boutiques/active/members` | همه اعضا | فهرست اعضا با شماره ماسک‌شده | `401`، `403` |
+| `POST /boutiques/active/members/invite` | فقط `boutique_owner` | ثبت عضویت با شماره موبایل + نقش (`branch_manager`/`boutique_staff`)؛ پاسخ شامل `smsSent: false` و `noteFa` | `403`، `409` (تکراری/مالک)، `400` |
+| `PATCH /boutiques/active/members/:userId` | فقط `boutique_owner` | تغییر نقش + ثبت در audit | `403`، `404`، `400` |
+| `DELETE /boutiques/active/members/:userId` | فقط `boutique_owner` | لغو دسترسی (نمی‌تواند مالک یا خودش باشد) | `403`، `409` |
+
+نکته امنیتی: پس از لغو، توکن مزون‌دارِ آن کاربر بلافاصله ۴۰۳ می‌گیرد (بررسی عضویت در هر درخواست).
+
+## لباس‌ها (پنل مزون)
+
+| مسیر | دسترسی | توضیح | خطاهای مهم |
+| --- | --- | --- | --- |
+| `GET /dresses` | اعضای مزون | فهرست با فیلتر وضعیت/دسته/جست‌وجو + صفحه‌بندی | `401`، `403` |
+| `POST /dresses` | `boutique_owner`/`branch_manager` | ساخت پیش‌نویس؛ قیمت‌ها از فرم به **تومان** و در DB **ریال** | `409` کد تکراری، `400` |
+| `GET /dresses/:id` | اعضای همان مزون | `404` برای مزون دیگر (بدون افشای وجود) | `404` |
+| `PATCH /dresses/:id` | `boutique_owner`/`branch_manager` | لباس منتشرشده قابل ویرایش نیست | `409` |
+| `POST /dresses/:id/publish` | فقط `boutique_owner` | الزامات: توضیح ≥۲۰ نویسه، قیمت، ≥۱ تصویر، مزون `approved` | `409` با دلیل دقیق فارسی |
+| `POST /dresses/:id/archive` | `boutique_owner`/`branch_manager` | حذف از کاتالوگ عمومی | `409` |
+| `POST /dresses/:id/media` | `boutique_owner`/`branch_manager` | بدنه خام تصویر (حداکثر ۸MB) + هدر اجباری `x-rights-attested: true` | `400` (MIME/حجم/عدم تأیید حقوق)، `413` |
+| `DELETE /dresses/:id/media/:mediaId` | `boutique_owner`/`branch_manager` | حذف نرم + حذف فایل | `404` |
+
+## رسانه خصوصی
+
+| مسیر | توضیح |
+| --- | --- |
+| `GET /media/:id?expires=<unix>&token=<hmac>` | فقط با URL امضاشده معتبر و منقضی‌نشده؛ `403` برای توکن نامعتبر/منقضی/فایل دیگر، `404` برای فایل حذف‌شده. هدرها: `Cache-Control: private, max-age=…` و `Content-Disposition: inline` |
+
+تصاویر در بارگذاری بازکدگذاری می‌شوند (JPEG کیفیت ۸۴، حداکثر ضلع ۲۰۰۰px) و EXIF/GPS حذف می‌شود؛ `checksum_sha256` برای ردیابی نگه‌داری می‌شود.
+
+## کاتالوگ عمومی (بدون احراز هویت)
+
+| مسیر | توضیح |
+| --- | --- |
+| `GET /public/dresses?city=&category=&priceMaxToman=&q=&page=` | فقط لباس `published` از مزون `approved`؛ هر تصویر با URL امضاشده کوتاه‌عمر |
+| `GET /public/dresses/:id` | جزئیات؛ `404` برای پیش‌نویس/بایگانی/مزون تأییدنشده |
+| `GET /public/boutiques/:slug` | صفحه عمومی مزون + لباس‌های منتشرشده |
+| `GET /public/cities` | شهرهای دارای مزون تأییدشده و تعداد آن‌ها |
+
 ## سلامت و وضعیت
 
 | مسیر | پاسخ |

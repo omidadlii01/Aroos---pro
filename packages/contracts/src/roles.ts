@@ -48,4 +48,45 @@ export const BOUTIQUE_STATUS_LABELS_FA: Record<BoutiqueStatus, string> = {
 
 /** وضعیت انتشار لباس — مستقل از وضعیت بررسی مزون. */
 export const DRESS_STATUSES = ['draft', 'pending_review', 'published', 'archived'] as const;
+export const DRESS_STATUS_LABELS_FA: Record<(typeof DRESS_STATUSES)[number], string> = {
+  draft: 'پیش‌نویس',
+  pending_review: 'در انتظار بررسی',
+  published: 'منتشرشده',
+  archived: 'بایگانی',
+};
+
+export const DRESS_CATEGORIES = ['wedding', 'evening', 'engagement', 'other'] as const;
+export type DressCategory = (typeof DRESS_CATEGORIES)[number];
+export const DRESS_CATEGORY_LABELS_FA: Record<DressCategory, string> = {
+  wedding: 'لباس عروس',
+  evening: 'لباس مجلسی',
+  engagement: 'لباس نامزدی',
+  other: 'سایر',
+};
+
+/** فهرست بسته ویژگی‌های لباس؛ مقدارها در دیتابیس متن آزاد کوتاه هستند. */
+export const DRESS_ATTRIBUTE_KEYS = [
+  'silhouette',
+  'neckline',
+  'sleeve',
+  'skirt',
+  'fabric',
+  'embellishment',
+  'color',
+] as const;
+export type DressAttributeKey = (typeof DRESS_ATTRIBUTE_KEYS)[number];
+export const DRESS_ATTRIBUTE_LABELS_FA: Record<DressAttributeKey, string> = {
+  silhouette: 'سیلوئت',
+  neckline: 'یقه',
+  sleeve: 'آستین',
+  skirt: 'دامن',
+  fabric: 'پارچه',
+  embellishment: 'تزئینات',
+  color: 'رنگ',
+};
+
+/** رسانه: فقط تصویر؛ سقف حجم و انواع مجاز در یک‌جا تعریف می‌شوند. */
+export const MEDIA_MAX_BYTES = 8 * 1024 * 1024;
+export const MEDIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export type MediaContentType = (typeof MEDIA_ALLOWED_TYPES)[number];
 export type DressStatus = (typeof DRESS_STATUSES)[number];

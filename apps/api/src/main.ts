@@ -5,10 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
+import { configureHttp } from './app-config.js';
 import { AppModule } from './app.module.js';
-import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
 import { JsonLogger } from './common/logger.js';
-import { requestIdMiddleware } from './common/request-id.middleware.js';
 import { ConfigError, loadConfig } from './config/config.js';
 
 async function bootstrap(): Promise<void> {
@@ -36,17 +35,7 @@ async function bootstrap(): Promise<void> {
     { logger },
   );
 
-  app.useLogger(logger);
-  app.set('trust proxy', 1);
-  app.use(requestIdMiddleware);
-  app.useGlobalFilters(new AllExceptionsFilter(logger));
-  app.enableCors({
-    origin: config.api.origins,
-    credentials: false,
-    allowedHeaders: ['content-type', 'authorization', 'x-request-id', 'x-tenant-id'],
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  });
-  app.enableShutdownHooks();
+  configureHttp(app, { logger, origins: config.api.origins });
 
   await app.listen(config.api.port, config.api.host);
   logger.log(
