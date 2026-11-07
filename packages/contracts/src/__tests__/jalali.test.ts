@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import {
   formatDateKeyJalali,
+  formatDateKeyJalaliShort,
   formatJalaliDate,
+  formatMinuteOfDayFa,
   gregorianToJalali,
   isValidJalali,
   jalaliToGregorian,
   parseJalaliInputToDateKey,
+  persianWeekdayOfDateKey,
   tehranDateKey,
+  tehranDateKeyPlus,
+  tehranInstant,
+  tehranOffsetMinutes,
 } from '../jalali.js';
 
 describe('تاریخ شمسی', () => {
@@ -60,5 +66,43 @@ describe('تاریخ شمسی', () => {
     const formatted = formatJalaliDate('2024-03-20T09:00:00.000Z');
     expect(formatted).toContain('۱۴۰۳');
     expect(formatted).toContain('فروردین');
+  });
+});
+
+describe('زمان‌بندی نوبت (فاز ۸)', () => {
+  it('اختلاف تهران با UTC همیشه ۲۱۰ دقیقه است (ایران ساعت تابستانی ندارد)', () => {
+    expect(tehranOffsetMinutes('2026-01-15T00:00:00.000Z')).toBe(210);
+    expect(tehranOffsetMinutes('2026-07-01T00:00:00.000Z')).toBe(210);
+    expect(tehranOffsetMinutes('2026-11-08T18:30:00.000Z')).toBe(210);
+  });
+
+  it('دقیقه‌های روز به لحظه درست UTC تبدیل می‌شوند و صعودی می‌مانند', () => {
+    const key = '2026-11-08';
+    expect(tehranInstant(key, 0).toISOString()).toBe('2026-11-07T20:30:00.000Z');
+    expect(tehranInstant(key, 600).toISOString()).toBe('2026-11-08T06:30:00.000Z');
+    expect(tehranInstant(key, 1020).toISOString()).toBe('2026-11-08T13:30:00.000Z');
+
+    const sequence = [0, 60, 600, 720, 1020].map((minute) =>
+      tehranInstant(key, minute).getTime(),
+    );
+    for (let i = 1; i < sequence.length; i += 1) {
+      expect(sequence[i]!).toBeGreaterThan(sequence[i - 1]!);
+    }
+  });
+
+  it('روز هفته ایرانی از شنبه شروع می‌شود', () => {
+    // ۲۰۲۶-۱۱-۰۷ شنبه است
+    expect(persianWeekdayOfDateKey('2026-11-07')).toBe(0);
+    expect(persianWeekdayOfDateKey('2026-11-08')).toBe(1);
+    expect(persianWeekdayOfDateKey('2026-11-13')).toBe(6);
+  });
+
+  it('کلید تاریخ فردا و برچسب فارسی درست است', () => {
+    const today = tehranDateKey(new Date());
+    expect(tehranDateKeyPlus(0)).toBe(today);
+    expect(tehranDateKeyPlus(1)).not.toBe(today);
+    expect(formatMinuteOfDayFa(600)).toBe('۱۰:۰۰');
+    expect(formatMinuteOfDayFa(0)).toBe('۰۰:۰۰');
+    expect(formatDateKeyJalaliShort('2026-11-08')).toBe('یکشنبه ۱۷ آبان');
   });
 });

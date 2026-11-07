@@ -136,6 +136,25 @@
 
 پردازش: `TryOnWorkerService` هر `TRYON_WORKER_INTERVAL_SECONDS` (پیش‌فرض ۵، صفر=خاموش، در تست خاموش) ردیف‌های `queued` را با `FOR UPDATE SKIP LOCKED` برمی‌دارد، پس چند نمونه API می‌توانند روی یک دیتابیس کار کنند. خروجی در مسیر خصوصی `tryon/<userId>/<id>.jpg` ذخیره می‌شود.
 
+## نوبت‌دهی حضوری (فاز ۸)
+
+| مسیر | توضیح | خطاهای مهم |
+| --- | --- | --- |
+| `GET /public/boutiques/:slug/slots?date=YYYY-MM-DD` | بازه‌های آزاد یک روز برای مزون تأییدشده؛ فقط ساعت‌ها، بدون هیچ داده شخصی. فقط از امروز تا `BOOKING_HORIZON_DAYS` | `400` تاریخ نامعتبر/خارج از بازه، `404` مزون ناشناس |
+| `POST /appointments` | بدنه `{ boutiqueId, startsAt, dressId?, note? }`؛ `startsAt` باید ISO-8601 با منطقه زمانی و دقیقاً یکی از بازه‌های ساعات کاری باشد. پاسخ `{ appointment, smsSent: false, noteFa }` با وضعیت `requested` | `400` زمان نامعتبر/کمتر از `BOOKING_MIN_LEAD_MINUTES`/بیش از افق، `404` مزون تأییدنشده یا لباس مزون دیگر، `409` بازه غیرمجاز/پرشده/سقف نوبت فعال |
+| `GET /appointments` | نوبت‌های خود عروس (۵۰ مورد آخر) | `401` |
+| `GET /appointments/:id` | فقط نوبت خود عروس؛ دیگران `404` | `401`، `404` |
+| `POST /appointments/:id/cancel` | لغو توسط عروس فقط برای `requested`/`confirmed` و پیش از شروع | `409` وضعیت/زمان گذشته، `404` |
+| `GET /boutiques/active/appointments?status=&from=&to=` | فهرست نوبت‌های مزون فعال با نام نمایشی و شماره ماسک‌شده عروس | `401`، `400`، `403` |
+| `POST /boutiques/active/appointments/:id/confirm` | `requested → confirmed` | `409`، `404` |
+| `POST /boutiques/active/appointments/:id/decline` | بدنه `{ reason }` (۵ تا ۴۰۰ نویسه) → `declined`؛ دلیل به عروس نمایش داده می‌شود | `400`، `409`، `404` |
+| `POST /boutiques/active/appointments/:id/complete` | `confirmed → completed` | `409`، `404` |
+| `POST /boutiques/active/appointments/:id/no-show` | `confirmed → no_show` | `409`، `404` |
+| `GET /boutiques/active/availability` | ساعات کاری هفتگی مزون | `401`، `403` |
+| `PUT /boutiques/active/availability` | بدنه `{ rules: [{ weekday, startsMinute, endsMinute, slotMinutes, isActive }] }`؛ فقط `boutique_owner` و `branch_manager` | `400` روز تکراری/بازه کوتاه‌تر از نوبت، `403` |
+
+قواعد: ساعت‌ها به **دقیقه از نیمه‌شب تهران** ذخیره می‌شوند (`weekday` ۰=شنبه … ۶=جمعه)؛ هر روز فقط یک بازه. هر بازه ظرفیت **یک نوبت** دارد و با ایندکس یکتای دیتابیس تضمین می‌شود، پس دو درخواست هم‌زمان یکی `409` می‌گیرد. هیچ نوبتی حذف نمی‌شود؛ لغو/رد وضعیت را عوض می‌کند. **هیچ پیامکی ارسال نمی‌شود** و پاسخ `smsSent: false` است.
+
 ## نگه‌داری و پاک‌سازی داده
 
 | مسیر/فرمان | توضیح |

@@ -1,5 +1,6 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
+import { AppointmentsModule } from './appointments/appointments.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BoutiquesModule } from './boutiques/boutiques.module.js';
@@ -41,6 +42,7 @@ export class AppModule {
         AdminModule,
         PhotosModule,
         TryOnModule,
+        AppointmentsModule,
         HealthModule,
       ],
     };

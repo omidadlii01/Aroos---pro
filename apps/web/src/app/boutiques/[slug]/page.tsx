@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { formatToman } from '@bridalos/contracts';
 import { Badge } from '@bridalos/ui';
 
+import { BookingPanel } from '@/components/booking-panel';
 import { SiteHeader } from '@/components/site-header';
 import { cityLabel } from '@/lib/cities';
 import { fetchBoutique } from '@/lib/server-api';
@@ -29,6 +31,10 @@ export default async function BoutiquePage({ params }: { params: Promise<{ slug:
             </p>
           ) : null}
         </header>
+
+        <Suspense fallback={<p className="mt-6 text-sm text-slate-500">در حال آماده‌سازی نوبت…</p>}>
+          <BookingPanel boutiqueId={data.boutique.id} slug={data.boutique.slug} />
+        </Suspense>
 
         {data.dresses.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-dashed border-sand-200 bg-white p-8 text-center text-sm text-slate-600">

@@ -63,6 +63,14 @@ export type AppConfig = {
     /** حداکثر تلاش برای هر درخواست پیش از اعلام failed. */
     maxAttempts: number;
   };
+  booking: {
+    /** حداکثر نوبت فعال (در انتظار/تأییدشده) برای هر عروس. */
+    maxActivePerBride: number;
+    /** افق رزرو: نوبت حداکثر تا چند روز آینده قابل درخواست است. */
+    horizonDays: number;
+    /** حداقل فاصله زمانی (دقیقه) تا شروع نوبت؛ جلوگیری از رزرو لحظه‌ای. */
+    minLeadMinutes: number;
+  };
 };
 
 export type ConfigLoadResult = { config: AppConfig; warnings: string[] };
@@ -214,6 +222,11 @@ export function loadConfig(env: Env): ConfigLoadResult {
       tryonProvider: env.AI_TRYON_PROVIDER === 'dev-watermark' ? 'dev-watermark' : 'none',
       workerIntervalSeconds: int('TRYON_WORKER_INTERVAL_SECONDS', 5, 0, 300),
       maxAttempts: int('TRYON_MAX_ATTEMPTS', 2, 1, 5),
+    },
+    booking: {
+      maxActivePerBride: int('BOOKING_MAX_ACTIVE_PER_BRIDE', 3, 1, 20),
+      horizonDays: int('BOOKING_HORIZON_DAYS', 30, 1, 180),
+      minLeadMinutes: int('BOOKING_MIN_LEAD_MINUTES', 120, 0, 10080),
     },
   };
 

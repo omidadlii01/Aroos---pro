@@ -403,3 +403,132 @@ export type TryOnResult = {
 export const TryOnDrainSchema = z.object({
   limit: z.coerce.number().int().min(1).max(20).default(5),
 });
+
+/* ------------------------------------------------------------------ */
+/* نوبت‌دهی مزون (فاز ۸)                                               */
+/* ------------------------------------------------------------------ */
+
+export const APPOINTMENT_STATUSES = [
+  'requested',
+  'confirmed',
+  'declined',
+  'cancelled',
+  'completed',
+  'no_show',
+] as const;
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
+
+export const APPOINTMENT_STATUS_LABELS_FA: Record<AppointmentStatus, string> = {
+  requested: 'در انتظار تأیید مزون',
+  confirmed: 'تأییدشده',
+  declined: 'ردشده',
+  cancelled: 'لغوشده',
+  completed: 'انجام‌شده',
+  no_show: 'عدم حضور',
+};
+
+/** وضعیت‌هایی که یک بازه زمانی را «اشغال» می‌کنند. */
+export const ACTIVE_APPOINTMENT_STATUSES = ['requested', 'confirmed'] as const;
+
+export const appointmentStatusSchema = z.enum(APPOINTMENT_STATUSES);
+
+/** یک قاعده هفتگی ساعات کاری: دقیقه‌های روز به وقت تهران. */
+export const AvailabilityRuleSchema = z
+  .object({
+    weekday: z.coerce.number().int().min(0, 'روز هفته نامعتبر است').max(6, 'روز هفته نامعتبر است'),
+    startsMinute: z.coerce.number().int().min(0).max(1439),
+    endsMinute: z.coerce.number().int().min(1).max(1440),
+    slotMinutes: z.coerce
+      .number()
+      .int()
+      .min(15, 'طول هر نوبت نباید کمتر از ۱۵ دقیقه باشد')
+      .max(240, 'طول هر نوبت نباید بیشتر از ۴ ساعت باشد')
+      .default(60),
+    isActive: z.boolean().default(true),
+  })
+  .refine((rule) => rule.endsMinute > rule.startsMinute, {
+    message: 'پایان بازه باید بعد از شروع آن باشد',
+    path: ['endsMinute'],
+  });
+
+export type AvailabilityRule = z.infer<typeof AvailabilityRuleSchema>;
+
+export const AvailabilityUpdateSchema = z.object({
+  rules: z.array(AvailabilityRuleSchema).max(21, 'حداکثر ۲۱ قاعده در هفته مجاز است'),
+});
+
+export type AvailabilityUpdateInput = z.infer<typeof AvailabilityUpdateSchema>;
+
+export const AppointmentCreateSchema = z.object({
+  boutiqueId: z.uuid('شناسه مزون معتبر نیست'),
+  /** لحظه شروع نوبت به ISO-8601 با منطقه زمانی؛ باید دقیقاً یک بازه معتبر باشد. */
+  startsAt: z.iso.datetime({ offset: true, error: 'زمان نوبت باید ISO-8601 با منطقه زمانی باشد' }),
+  dressId: z.uuid('شناسه لباس معتبر نیست').nullish(),
+  note: z.string().trim().max(400, 'یادداشت حداکثر ۴۰۰ نویسه').nullish(),
+});
+
+export type AppointmentCreateInput = z.infer<typeof AppointmentCreateSchema>;
+
+export const AppointmentDeclineSchema = z.object({
+  reason: z.string().trim().min(5, 'دلیل رد باید حداقل ۵ نویسه باشد').max(400),
+});
+
+export const AppointmentListQuerySchema = z.object({
+  status: appointmentStatusSchema.optional(),
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
+});
+
+export const SlotQuerySchema = z.object({
+  date: z.iso.date('تاریخ باید به شکل YYYY-MM-DD باشد'),
+});
+
+export type AvailabilityRuleView = {
+  weekday: number;
+  startsMinute: number;
+  endsMinute: number;
+  slotMinutes: number;
+  isActive: boolean;
+};
+
+export type AppointmentBoutiqueSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  citySlug: string;
+};
+
+export type AppointmentView = {
+  id: string;
+  status: AppointmentStatus;
+  startsAt: string;
+  endsAt: string;
+  /** کلید تاریخ تهران (YYYY-MM-DD) برای نمایش شمسی بدون محاسبه دوباره. */
+  dateKey: string;
+  /** ساعت شروع به وقت تهران «۱۶:۳۰» با ارقام فارسی؛ فقط برای نمایش. */
+  timeLabel: string;
+  boutique: AppointmentBoutiqueSummary;
+  dress: { id: string; name: string } | null;
+  /** فقط برای عروس صاحب نوبت یا کارکنان همان مزون پر می‌شود. */
+  note: string | null;
+  declineReason: string | null;
+  /** نام نمایشی عروس برای کارکنان مزون؛ در پاسخ عروس `null` است. */
+  brideName: string | null;
+  /** شماره ماسک‌شده عروس؛ فقط در پاسخ کارکنان مزون پر می‌شود. */
+  bridePhoneMasked: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+};
+
+export type SlotView = {
+  startsAt: string;
+  endsAt: string;
+  timeLabel: string;
+  available: boolean;
+};
+
+/** پیام ثابت UI: هیچ پیامک واقعی برای نوبت ارسال نمی‌شود. */
+export const APPOINTMENT_NO_SMS_NOTE_FA =
+  'پیامک تأیید ارسال نمی‌شود (آداپتور پیامک واقعی متصل نیست). وضعیت نوبت را در همین صفحه ببینید.';
+
+export type AppointmentListQuery = z.infer<typeof AppointmentListQuerySchema>;

@@ -289,6 +289,12 @@ export default function DashboardPage() {
                       لباس‌ها
                     </Link>
                     <Link
+                      href="/dashboard/appointments"
+                      className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      نوبت‌ها
+                    </Link>
+                    <Link
                       href="/dashboard/team"
                       className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                     >

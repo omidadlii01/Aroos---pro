@@ -148,3 +148,99 @@ function toDate(instant: Date | string): Date {
   if (Number.isNaN(date.getTime())) throw new RangeError(`تاریخ نامعتبر است: ${String(instant)}`);
   return date;
 }
+
+/* ------------------------------------------------------------------ */
+/* زمان‌بندی نوبت (فاز ۸)                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * اختلاف زمانی تهران با UTC بر حسب دقیقه (زمستان +۲۱۰، تابستان +۲۷۰).
+ *
+ * از `timeZoneName: 'longOffset'` استفاده می‌شود چون بعضی ICUها با
+ * `hour12: false` همچنان ساعت ۱۲ساعته برمی‌گردانند و محاسبه اختلاف را خراب می‌کنند.
+ */
+export function tehranOffsetMinutes(instant: Date | string): number {
+  const date = typeof instant === 'string' ? new Date(instant) : instant;
+  if (Number.isNaN(date.getTime())) throw new RangeError('تاریخ نامعتبر است');
+  const parts = getFormatter({ timeZoneName: 'longOffset' }, 'en-US').formatToParts(date);
+  const name = parts.find((part) => part.type === 'timeZoneName')?.value ?? 'GMT';
+  const match = /GMT([+-])(\d{2}):(\d{2})/.exec(name);
+  if (!match) return 0;
+  const sign = match[1] === '-' ? -1 : 1;
+  return sign * (Number(match[2]) * 60 + Number(match[3]));
+}
+
+/**
+ * ساخت لحظه دقیق از «کلید تاریخ تهران» + «دقیقه از نیمه‌شب تهران».
+ * دو بار تکرار می‌شود تا در مرز تغییر ساعت، مقدار نهایی درست باشد.
+ */
+export function tehranInstant(dateKey: string, minuteOfDay: number): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (!match) throw new RangeError(`کلید تاریخ نامعتبر است: ${dateKey}`);
+  if (!Number.isInteger(minuteOfDay) || minuteOfDay < 0 || minuteOfDay > 1440) {
+    throw new RangeError('دقیقه روز باید بین ۰ و ۱۴۴۰ باشد');
+  }
+  const guess = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 0, minuteOfDay);
+  let instant = new Date(guess - tehranOffsetMinutes(new Date(guess)) * 60000);
+  instant = new Date(guess - tehranOffsetMinutes(instant) * 60000);
+  return instant;
+}
+
+/** روز هفته ایرانی: ۰=شنبه … ۶=جمعه (بر خلاف `Date.getDay` که یکشنبه=۰ است). */
+export function persianWeekdayOfDateKey(dateKey: string): number {
+  const { gy, gm, gd } = gregorianFromDateKey(dateKey);
+  const jsDay = new Date(Date.UTC(gy, gm - 1, gd)).getUTCDay();
+  return (jsDay + 1) % 7;
+}
+
+/** کلید تاریخ تهران برای امروز + n روز (برای ساخت بازه‌های انتخاب تاریخ). */
+export function tehranDateKeyPlus(days: number, from: Date = new Date()): string {
+  const base = tehranInstant(tehranDateKey(from), 0);
+  return tehranDateKey(new Date(base.getTime() + days * 86400000 + 12 * 3600000));
+}
+
+/** «۰۹:۳۰» از دقیقه‌های روز، با ارقام فارسی. */
+export function formatMinuteOfDayFa(minuteOfDay: number): string {
+  const hour = Math.floor(minuteOfDay / 60);
+  const minute = minuteOfDay % 60;
+  return toPersianDigits(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+}
+
+/** «شنبه ۱۲ مرداد» — برچسب کوتاه یک روز برای انتخاب‌گر تاریخ. */
+export function formatDateKeyJalaliShort(dateKey: string): string {
+  const { jm, jd } = gregorianToJalali(gregorianFromDateKey(dateKey));
+  const monthNames = [
+    'فروردین',
+    'اردیبهشت',
+    'خرداد',
+    'تیر',
+    'مرداد',
+    'شهریور',
+    'مهر',
+    'آبان',
+    'آذر',
+    'دی',
+    'بهمن',
+    'اسفند',
+  ];
+  const weekday = PERSIAN_WEEKDAYS_FA[persianWeekdayOfDateKey(dateKey)];
+  return `${weekday} ${toPersianDigits(jd)} ${monthNames[jm - 1]}`;
+}
+
+/** نام روزهای هفته ایرانی؛ ایندکس ۰ = شنبه. */
+export const PERSIAN_WEEKDAYS_FA = [
+  'شنبه',
+  'یکشنبه',
+  'دوشنبه',
+  'سه‌شنبه',
+  'چهارشنبه',
+  'پنجشنبه',
+  'جمعه',
+] as const;
+
+/** کلید تاریخ میلادی → اجزای میلادی (با اعتبارسنجی قالب). */
+export function gregorianFromDateKey(dateKey: string): GregorianDate {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (!match) throw new RangeError(`کلید تاریخ نامعتبر است: ${dateKey}`);
+  return { gy: Number(match[1]), gm: Number(match[2]), gd: Number(match[3]) };
+}

@@ -23,6 +23,12 @@ export function SiteHeader() {
           <Link href="/photos" className="rounded-lg px-3 py-1.5 text-slate-600 hover:bg-sand-100">
             عکس من
           </Link>
+          <Link
+            href="/appointments"
+            className="rounded-lg px-3 py-1.5 text-slate-600 hover:bg-sand-100"
+          >
+            نوبت‌ها
+          </Link>
           <Link href="/login" className="rounded-lg px-3 py-1.5 text-slate-600 hover:bg-sand-100">
             ورود
           </Link>
