@@ -36,13 +36,14 @@ export const TENANT_ROLE_RANK: Record<string, number> = {
   boutique_staff: 10,
 };
 
-export const BOUTIQUE_STATUSES = ['draft', 'pending_review', 'approved', 'suspended'] as const;
+export const BOUTIQUE_STATUSES = ['draft', 'pending_review', 'approved', 'rejected', 'suspended'] as const;
 export type BoutiqueStatus = (typeof BOUTIQUE_STATUSES)[number];
 
 export const BOUTIQUE_STATUS_LABELS_FA: Record<BoutiqueStatus, string> = {
   draft: 'پیش‌نویس',
   pending_review: 'در انتظار بررسی',
   approved: 'تأییدشده',
+  rejected: 'ردشده',
   suspended: 'معلق',
 };
 

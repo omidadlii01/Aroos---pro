@@ -16,6 +16,8 @@ export type BoutiqueView = {
   description: string | null;
   publicPhone: string | null;
   status: BoutiqueStatus;
+  /** دلیل رد/تعلیق؛ فقط برای اعضای مزون معنا دارد و در پاسخ‌های عمومی خالی است. */
+  reviewReason: string | null;
   createdAt: string;
   myRole: Role | null;
 };
@@ -30,6 +32,7 @@ type BoutiqueRow = {
   status: BoutiqueStatus;
   created_at: Date | string;
   owner_user_id: string;
+  review_reason?: string | null;
   my_role?: Role | null;
 };
 
@@ -42,6 +45,7 @@ function toView(row: BoutiqueRow): BoutiqueView {
     description: row.description,
     publicPhone: row.public_phone,
     status: row.status,
+    reviewReason: row.review_reason ?? null,
     createdAt: new Date(row.created_at).toISOString(),
     myRole: row.my_role ?? null,
   };
@@ -76,7 +80,7 @@ export class BoutiquesService {
       const rows = await tx.query<BoutiqueRow>(
         `INSERT INTO boutiques (slug, name, city_slug, description, public_phone, owner_user_id, status)
          VALUES ($1, $2, $3, $4, $5, $6, 'draft')
-         RETURNING id, slug, name, city_slug, description, public_phone, status, created_at, owner_user_id`,
+         RETURNING id, slug, name, city_slug, description, public_phone, status, created_at, owner_user_id, review_reason`,
         [slug, input.name, input.citySlug, input.description ?? null, input.publicPhone ?? null, userId],
       );
       const boutique = rows[0];
@@ -107,7 +111,7 @@ export class BoutiquesService {
   async listMine(userId: string): Promise<BoutiqueView[]> {
     const rows = await this.runner.query<BoutiqueRow>(
       `SELECT b.id, b.slug, b.name, b.city_slug, b.description, b.public_phone, b.status,
-              b.created_at, b.owner_user_id, m.role AS my_role
+              b.created_at, b.owner_user_id, b.review_reason, m.role AS my_role
          FROM memberships m
          JOIN boutiques b ON b.id = m.boutique_id
         WHERE m.user_id = $1 AND m.revoked_at IS NULL
@@ -125,7 +129,7 @@ export class BoutiquesService {
   async getForUser(userId: string, boutiqueId: string): Promise<BoutiqueView> {
     const rows = await this.runner.query<BoutiqueRow>(
       `SELECT b.id, b.slug, b.name, b.city_slug, b.description, b.public_phone, b.status,
-              b.created_at, b.owner_user_id, m.role AS my_role
+              b.created_at, b.owner_user_id, b.review_reason, m.role AS my_role
          FROM boutiques b
          LEFT JOIN memberships m
            ON m.boutique_id = b.id AND m.user_id = $1 AND m.revoked_at IS NULL
@@ -153,7 +157,7 @@ export class BoutiquesService {
               city_slug = COALESCE($6, city_slug),
               updated_at = now()
         WHERE id = $1 AND owner_user_id = $2
-        RETURNING id, slug, name, city_slug, description, public_phone, status, created_at, owner_user_id`,
+        RETURNING id, slug, name, city_slug, description, public_phone, status, created_at, owner_user_id, review_reason`,
       [
         boutiqueId,
         userId,
@@ -181,8 +185,8 @@ export class BoutiquesService {
     const rows = await this.runner.query<BoutiqueRow>(
       `UPDATE boutiques
           SET status = 'pending_review', submitted_at = now(), updated_at = now()
-        WHERE id = $1 AND owner_user_id = $2 AND status = 'draft'
-        RETURNING id, slug, name, city_slug, description, public_phone, status, created_at, owner_user_id`,
+        WHERE id = $1 AND owner_user_id = $2 AND status IN ('draft', 'rejected')
+        RETURNING id, slug, name, city_slug, description, public_phone, status, created_at, owner_user_id, review_reason`,
       [boutiqueId, userId],
     );
     const row = rows[0];
@@ -192,7 +196,7 @@ export class BoutiquesService {
         [boutiqueId, userId],
       );
       if (exists[0]) {
-        throw AppError.conflict('فقط مزون پیش‌نویس را می‌توان برای بررسی ارسال کرد.');
+        throw AppError.conflict('فقط مزون پیش‌نویس یا ردشده را می‌توان برای بررسی ارسال کرد.');
       }
       throw AppError.notFound('مزون یافت نشد.');
     }

@@ -267,3 +267,60 @@ export const PublicCatalogQuerySchema = z.object({
 });
 
 export type PublicCatalogQuery = z.infer<typeof PublicCatalogQuerySchema>;
+
+/* ------------------------------------------------------------------ */
+/* بررسی پلتفرم (ادمین)                                                */
+/* ------------------------------------------------------------------ */
+
+export const BoutiqueRejectSchema = z.object({
+  reason: z
+    .string({ error: 'دلیل رد الزامی است' })
+    .trim()
+    .min(5, 'دلیل رد باید حداقل ۵ نویسه باشد')
+    .max(500, 'دلیل رد نباید بیش از ۵۰۰ نویسه باشد'),
+});
+
+export type BoutiqueRejectInput = z.infer<typeof BoutiqueRejectSchema>;
+
+export const AdminBoutiqueListQuerySchema = z.object({
+  status: z.enum(BOUTIQUE_STATUSES).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export const AdminAuditQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+});
+
+/** نمای مزون در پنل ادمین — شماره مالک همیشه ماسک‌شده است. */
+export type AdminBoutiqueView = {
+  id: string;
+  slug: string;
+  name: string;
+  citySlug: string;
+  status: BoutiqueStatus;
+  ownerName: string | null;
+  ownerPhoneMasked: string;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  reviewReason: string | null;
+  dressCount: number;
+  publishedDressCount: number;
+  createdAt: string;
+};
+
+export type AdminOverview = {
+  boutiques: Record<BoutiqueStatus, number>;
+  dresses: Record<string, number>;
+  pendingBoutiques: number;
+  users: number;
+  publishedDresses: number;
+};
+
+export type AdminAuditView = {
+  id: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  createdAt: string;
+};

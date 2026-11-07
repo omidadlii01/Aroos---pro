@@ -37,6 +37,7 @@ type Boutique = {
   citySlug: string;
   description: string | null;
   status: keyof typeof BOUTIQUE_STATUS_LABELS_FA;
+  reviewReason: string | null;
   createdAt: string;
   myRole: Role | null;
 };
@@ -45,6 +46,7 @@ const statusTone: Record<string, 'neutral' | 'success' | 'warning' | 'danger' | 
   draft: 'neutral',
   pending_review: 'warning',
   approved: 'success',
+  rejected: 'danger',
   suspended: 'danger',
 };
 
@@ -166,9 +168,16 @@ export default function DashboardPage() {
       <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-bold text-slate-900">پنل من</h1>
-          <Button variant="ghost" size="sm" onClick={logout}>
-            خروج
-          </Button>
+          <div className="flex items-center gap-3">
+            {me?.user.roles.includes('platform_admin') ? (
+              <Link href="/admin" className="text-sm text-brand-700 underline">
+                پنل مدیر پلتفرم
+              </Link>
+            ) : null}
+            <Button variant="ghost" size="sm" onClick={logout}>
+              خروج
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -253,6 +262,11 @@ export default function DashboardPage() {
                     <p className="mt-1 text-xs text-slate-500">
                       {cityLabel(boutique.citySlug)} · ثبت: {formatJalaliDateTime(boutique.createdAt)}
                     </p>
+                    {boutique.reviewReason ? (
+                      <p className="mt-2 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                        دلیل رد: {boutique.reviewReason}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -263,9 +277,9 @@ export default function DashboardPage() {
                     >
                       انتخاب به‌عنوان مزون فعال
                     </Button>
-                    {boutique.status === 'draft' ? (
+                    {boutique.status === 'draft' || boutique.status === 'rejected' ? (
                       <Button size="sm" onClick={() => void submitForReview(boutique.id)}>
-                        ارسال برای بررسی
+                        {boutique.status === 'rejected' ? 'ارسال دوباره برای بررسی' : 'ارسال برای بررسی'}
                       </Button>
                     ) : null}
                     <Link

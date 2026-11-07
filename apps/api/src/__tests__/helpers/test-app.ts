@@ -85,13 +85,27 @@ export type LoginResult = {
  */
 const loginCache = new Map<string, LoginResult>();
 
-/** ورود کامل با OTP در حالت توسعه (کد از پاسخ devCode خوانده می‌شود). */
-export async function login(app: INestApplication, phone: string): Promise<LoginResult> {
+/**
+ * ورود کامل با OTP در حالت توسعه (کد از پاسخ devCode خوانده می‌شود).
+ * `fresh: true` کش نشست را دور می‌زند؛ برای وقتی لازم است که نقش کاربر
+ * پس از ورود قبلی تغییر کرده باشد (مثلاً ارتقا به مدیر پلتفرم).
+ */
+export async function login(
+  app: INestApplication,
+  phone: string,
+  options: { fresh?: boolean } = {},
+): Promise<LoginResult> {
   const cached = loginCache.get(phone);
-  if (cached && cached.accessToken) return cached;
+  if (cached && cached.accessToken && !options.fresh) return cached;
 
   const server = app.getHttpServer();
-  const challenge = await request(server).post('/api/v1/auth/otp/request').send({ phone });
+  let challenge = await request(server).post('/api/v1/auth/otp/request').send({ phone });
+  if (challenge.status === 429) {
+    // محدودیت نرخ واقعی است؛ در تست فقط تا پایان cooldown صبر می‌کنیم و همان درخواست را تکرار می‌کنیم.
+    const seconds = Number(challenge.body?.error?.details?.retryAfterSeconds ?? 5);
+    await new Promise((resolve) => setTimeout(resolve, (seconds + 0.5) * 1000));
+    challenge = await request(server).post('/api/v1/auth/otp/request').send({ phone });
+  }
   if (challenge.status !== 200) {
     return {
       accessToken: '',
@@ -114,6 +128,17 @@ export async function login(app: INestApplication, phone: string): Promise<Login
   };
   if (result.accessToken) loginCache.set(phone, result);
   return result;
+}
+
+/**
+ * ارتقای کاربر آزمایشی به مدیر پلتفرم.
+ * نقش در دیتابیس ذخیره می‌شود و guard ادمین آن را در هر درخواست می‌خواند.
+ */
+export async function promoteToPlatformAdmin(
+  runner: SqlRunner,
+  userId: string,
+): Promise<void> {
+  await runner.query("UPDATE users SET platform_role = 'platform_admin' WHERE id = $1", [userId]);
 }
 
 export function authHeader(token: string): Record<string, string> {
