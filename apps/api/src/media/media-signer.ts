@@ -21,11 +21,20 @@ export class MediaSigner {
       .digest();
   }
 
-  createSignedPath(mediaId: string, now: Date = new Date()): { path: string; expiresAt: string } {
+  /**
+   * ساخت مسیر امضاشده. `basePath` برای منابعی است که مسیر خواندن متفاوتی دارند
+   * (مثلاً عکس عروس: `/api/v1/photos/:id/file`)؛ امضا همیشه روی شناسه + انقضا است.
+   */
+  createSignedPath(
+    mediaId: string,
+    options: { basePath?: string; now?: Date } = {},
+  ): { path: string; expiresAt: string } {
+    const now = options.now ?? new Date();
     const expiresAtSeconds = Math.floor(now.getTime() / 1000) + this.config.media.signedUrlTtlSeconds;
     const token = this.signature(mediaId, expiresAtSeconds).toString('base64url');
+    const basePath = options.basePath ?? `/api/v1/media/${mediaId}`;
     return {
-      path: `/api/v1/media/${mediaId}?expires=${expiresAtSeconds}&token=${token}`,
+      path: `${basePath}?expires=${expiresAtSeconds}&token=${token}`,
       expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
     };
   }

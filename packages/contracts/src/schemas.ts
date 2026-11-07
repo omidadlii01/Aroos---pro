@@ -324,3 +324,36 @@ export type AdminAuditView = {
   entityId: string | null;
   createdAt: string;
 };
+
+/* ------------------------------------------------------------------ */
+/* عکس شخصی عروس (فاز ۶)                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * نسخه رضایت‌نامه. هر تغییر در متن رضایت باید نسخه را بالا ببرد تا
+ * رضایت‌های قبلی با متن جدید اشتباه گرفته نشوند.
+ */
+export const PHOTO_CONSENT_VERSION = 'v1';
+
+/** مدت نگه‌داری پیش‌فرض عکس عروس (روز)؛ پس از آن حذف خودکار. */
+export const PHOTO_RETENTION_DAYS = 90;
+
+/** متن رسمی رضایت‌نامه — UI و API از همین منبع استفاده می‌کنند. */
+export const PHOTO_CONSENT_TEXT_FA =
+  'با آگاهی کامل موافقم که تصویرم فقط برای پیش‌نمایش مجازی لباس استفاده شود؛ ' +
+  'تصویر در فضای خصوصی ذخیره می‌شود، در کاتالوگ یا شبکه اجتماعی منتشر نمی‌شود و ' +
+  'در هر زمان می‌توانم آن را حذف کنم. می‌دانم پیش‌نمایش مجازی تخمین بصری است و ' +
+  'تضمین اندازه، جنس پارچه یا نتیجه دوخت نیست.';
+
+export type BridePhotoView = {
+  id: string;
+  url: string;
+  expiresAt: string;
+  width: number | null;
+  height: number | null;
+  byteSize: number;
+  consentVersion: string;
+  consentGivenAt: string;
+  retentionUntil: string;
+  createdAt: string;
+};
