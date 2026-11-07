@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'arena/**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node:
+    name: Node — typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: ساخت قراردادهای مشترک
+        run: npm run build:contracts
+      - name: Lint
+        run: npm run lint
+      - name: Type-check
+        run: npm run typecheck
+      - name: تست واحد و یکپارچه (پستگرس درون‌فرایندی، بدون Docker)
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  ai-service:
+    name: AI service — pytest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest
+
+  secret-scan:
+    name: Secret scan (سبک)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: جلوگیری از commit فایل env و کلید
+        run: |
+          set -e
+          if git ls-files | grep -E '(^|/)\.env(\..*)?$' | grep -v '\.env\.example'; then
+            echo "::error::فایل env نباید commit شود"
+            exit 1
+          fi
+          if git ls-files | grep -E '\.(pem|key|p12)$'; then
+            echo "::error::فایل کلید نباید commit شود"
+            exit 1
+          fi
+          echo "بدون فایل محیطی/کلید مشکوک"

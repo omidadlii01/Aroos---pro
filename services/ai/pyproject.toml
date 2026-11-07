@@ -1,0 +1,9 @@
+[project]
+name = "bridalos-ai"
+version = "0.1.0"
+description = "سرویس هوش مصنوعی BridalOS (آداپتور مستقل از ارائه‌دهنده)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/vazirmatn/index.css';
+
+/* ---------------------------------------------------------------
+   Design tokens — BridalOS
+   منبع واحد رنگ/فاصله/گردی گوشه. هر تغییر برند از همین‌جا انجام می‌شود.
+   پالت: «عروس آرام» — صورتی خاکی، شرابی ملایم، خنثای گرم.
+---------------------------------------------------------------- */
+@theme {
+  --font-sans: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #fdf5f7;
+  --color-brand-100: #fbe8ee;
+  --color-brand-200: #f6d0dc;
+  --color-brand-300: #eda9bd;
+  --color-brand-400: #e07b9a;
+  --color-brand-500: #cf5180;
+  --color-brand-600: #b93a6c;
+  --color-brand-700: #9b2c56;
+  --color-brand-800: #7d2546;
+  --color-brand-900: #67213c;
+
+  --color-sand-50: #faf8f5;
+  --color-sand-100: #f3efe8;
+  --color-sand-200: #e8e0d4;
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-sand-50);
+  color: #1f2937;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* اعداد فارسی برای نمایش‌های عمومی؛ ورودی‌های عددی/تلفن لاتین می‌مانند */
+.fa-digits {
+  font-feature-settings: 'ss01';
+}
+
+*:focus-visible {
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

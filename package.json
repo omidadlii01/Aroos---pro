@@ -1,0 +1,35 @@
+{
+  "name": "bridalos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BridalOS — پلتفرم فارسی‌محور بازار و عملیات مزون‌های لباس عروس",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @bridalos/contracts && npm run build -w @bridalos/api && npm run build -w @bridalos/web",
+    "build:contracts": "npm run build -w @bridalos/contracts",
+    "typecheck": "npm run typecheck -w @bridalos/contracts && npm run typecheck -w @bridalos/api && npm run typecheck -w @bridalos/web",
+    "test": "npm run test -w @bridalos/contracts && npm run test -w @bridalos/api",
+    "test:ai": "bash scripts/test-ai.sh",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dev:api": "npm run dev -w @bridalos/api",
+    "dev:web": "npm run dev -w @bridalos/web",
+    "db:migrate": "npm run db:migrate -w @bridalos/api",
+    "db:seed:dev": "npm run db:seed:dev -w @bridalos/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "eslint": "^9.20.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.22.0",
+    "vitest": "^5.1.0"
+  }
+}

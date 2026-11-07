@@ -1,0 +1,28 @@
+{
+  "name": "@bridalos/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "رابط کاربری فارسی/RTL BridalOS (Next.js App Router)",
+  "scripts": {
+    "dev": "next dev --port ${WEB_PORT:-3000}",
+    "build": "next build",
+    "start": "next start --port ${WEB_PORT:-3000}",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bridalos/contracts": "*",
+    "@bridalos/ui": "*",
+    "@fontsource-variable/vazirmatn": "^5.3.0",
+    "next": "^16.4.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.7.3"
+  }
+}
