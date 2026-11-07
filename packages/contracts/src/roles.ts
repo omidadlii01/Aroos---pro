@@ -91,3 +91,18 @@ export const MEDIA_MAX_BYTES = 8 * 1024 * 1024;
 export const MEDIA_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export type MediaContentType = (typeof MEDIA_ALLOWED_TYPES)[number];
 export type DressStatus = (typeof DRESS_STATUSES)[number];
+
+/**
+ * وضعیت درخواست امتحان مجازی.
+ * `blocked` یعنی سرویس AI در دسترس نیست؛ هیچ تصویری ساخته نشده است.
+ */
+export const TRYON_STATUSES = ['blocked', 'queued', 'processing', 'succeeded', 'failed'] as const;
+export type TryOnStatus = (typeof TRYON_STATUSES)[number];
+
+export const TRYON_STATUS_LABELS_FA: Record<TryOnStatus, string> = {
+  blocked: 'مسدود (سرویس فعال نیست)',
+  queued: 'در صف',
+  processing: 'در حال پردازش',
+  succeeded: 'آماده',
+  failed: 'ناموفق',
+};

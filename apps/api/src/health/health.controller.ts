@@ -56,7 +56,11 @@ export class HealthController {
       otpDelivery: this.config.sms.driver === 'dev' ? 'dev-log' : 'sms',
       devEchoOtp: this.config.auth.devEchoOtp,
       payments: { status: 'disabled', reason: 'بدون درگاه پرداخت و تأیید مالک؛ فقط آداپتور sandbox در فاز ۱۳' },
-      ai: { status: 'not-configured', reason: 'سرویس AI فقط در حالت آزمایشی watermark اجرا می‌شود' },
+      ai: {
+        status: 'not-configured',
+        provider: this.config.ai.tryonProvider,
+        reason: 'هیچ provider واقعی متصل نیست؛ درخواست‌های امتحان مجازی با وضعیت blocked ثبت می‌شوند',
+      },
       sms: { status: 'blocked', reason: 'آداپتور پیامک واقعی نیازمند کلید و تأیید مالک است' },
     };
   }

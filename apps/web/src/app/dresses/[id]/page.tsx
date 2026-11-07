@@ -9,6 +9,7 @@ import {
 import { Alert, Badge } from '@bridalos/ui';
 
 import { SiteHeader } from '@/components/site-header';
+import { TryOnPanel } from '@/components/tryon-panel';
 import { cityLabel } from '@/lib/cities';
 import { fetchDress } from '@/lib/server-api';
 
@@ -91,6 +92,8 @@ export default async function DressPage({ params }: { params: Promise<{ id: stri
                 صفحه مزون
               </Link>
             </div>
+
+            <TryOnPanel dressId={dress.id} />
 
             <div className="mt-4">
               <Alert tone="info" title="رزرو حضوری هنوز فعال نیست">

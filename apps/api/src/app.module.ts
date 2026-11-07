@@ -14,6 +14,7 @@ import { MediaModule } from './media/media.module.js';
 import { PublicModule } from './public/public.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { PhotosModule } from './photos/photos.module.js';
+import { TryOnModule } from './tryon/tryon.module.js';
 import { TenantsModule } from './tenants/tenants.module.js';
 
 export type AppModuleOptions = {
@@ -39,6 +40,7 @@ export class AppModule {
         PublicModule,
         AdminModule,
         PhotosModule,
+        TryOnModule,
         HealthModule,
       ],
     };

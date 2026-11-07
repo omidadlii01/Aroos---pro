@@ -11,6 +11,7 @@ import {
 } from '@bridalos/contracts';
 
 import { AuditService } from '../audit/audit.service.js';
+import { PhotosRetentionService } from '../photos/photos-retention.service.js';
 import { AppError } from '../common/errors.js';
 import { SQL_RUNNER } from '../database/database.module.js';
 import type { SqlClient, SqlRunner } from '../database/sql.js';
@@ -61,7 +62,23 @@ export class AdminService {
   constructor(
     @Inject(SQL_RUNNER) private readonly runner: SqlRunner,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(PhotosRetentionService) private readonly retention: PhotosRetentionService,
   ) {}
+
+  /**
+   * اجرای دستی پاک‌سازی عکس‌های منقضی توسط ادمین.
+   * همان منطق CLI/cron را صدا می‌زند و نتیجه در audit ثبت می‌شود.
+   */
+  async purgeExpiredPhotos(adminUserId: string): Promise<{ purged: number; failed: number }> {
+    const result = await this.retention.purgeExpired();
+    await this.audit.record({
+      actorUserId: adminUserId,
+      action: 'photos.retention_purged',
+      entityType: 'bride_photo',
+      metadata: { purged: result.purged, failed: result.failed },
+    });
+    return result;
+  }
 
   async listBoutiques(params: {
     status?: BoutiqueStatus;

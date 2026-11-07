@@ -9,6 +9,7 @@ import {
   ROLES,
   type BoutiqueStatus,
   type Role,
+  type TryOnStatus,
 } from './roles.js';
 
 /** شماره موبایل ایران → همیشه به `09xxxxxxxxx` نرمال می‌شود. */
@@ -355,5 +356,27 @@ export type BridePhotoView = {
   consentVersion: string;
   consentGivenAt: string;
   retentionUntil: string;
+  createdAt: string;
+};
+
+/* ------------------------------------------------------------------ */
+/* امتحان مجازی (فاز ۶ — وضعیت صریح)                                   */
+/* ------------------------------------------------------------------ */
+
+export const TryOnCreateSchema = z.object({
+  photoId: z.uuid('شناسه عکس معتبر نیست'),
+  dressId: z.uuid('شناسه لباس معتبر نیست'),
+});
+
+export type TryOnCreateInput = z.infer<typeof TryOnCreateSchema>;
+
+export type TryOnView = {
+  id: string;
+  photoId: string | null;
+  dressId: string;
+  status: TryOnStatus;
+  statusReason: string | null;
+  provider: string;
+  aiConfigured: boolean;
   createdAt: string;
 };

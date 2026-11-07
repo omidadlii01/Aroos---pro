@@ -22,7 +22,8 @@
     "dev:api": "npm run dev -w @bridalos/api",
     "dev:web": "npm run dev -w @bridalos/web",
     "db:migrate": "npm run db:migrate -w @bridalos/api",
-    "db:seed:dev": "npm run db:seed:dev -w @bridalos/api"
+    "db:seed:dev": "npm run db:seed:dev -w @bridalos/api",
+    "photos:sweep": "npm run photos:sweep -w @bridalos/api"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",

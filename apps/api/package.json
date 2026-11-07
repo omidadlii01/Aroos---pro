@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "tsx src/database/cli/migrate.ts",
-    "db:seed:dev": "tsx src/database/cli/seed-dev.ts"
+    "db:seed:dev": "tsx src/database/cli/seed-dev.ts",
+    "photos:sweep": "tsx src/database/cli/photos-sweep.ts"
   },
   "dependencies": {
     "@bridalos/contracts": "*",

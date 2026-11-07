@@ -51,6 +51,14 @@ export type AppConfig = {
     signedUrlTtlSeconds: number;
     signingSecret: string;
   };
+  photos: {
+    /** فاصله اجرای پاک‌سازی عکس‌های منقضی در فرایند API؛ صفر = خاموش (فقط CLI/cron). */
+    sweepSeconds: number;
+  };
+  ai: {
+    /** ارائه‌دهنده امتحان مجازی؛ `none` یعنی هیچ سرویسی متصل نیست. */
+    tryonProvider: 'none' | 'dev-watermark';
+  };
 };
 
 export type ConfigLoadResult = { config: AppConfig; warnings: string[] };
@@ -195,7 +203,18 @@ export function loadConfig(env: Env): ConfigLoadResult {
       signedUrlTtlSeconds: int('MEDIA_SIGNED_URL_TTL_SECONDS', 300, 30, 3600),
       signingSecret: secret('MEDIA_SIGNING_SECRET', 32),
     },
+    photos: {
+      sweepSeconds: int('PHOTO_RETENTION_SWEEP_SECONDS', 3600, 0, 86_400),
+    },
+    ai: {
+      tryonProvider: env.AI_TRYON_PROVIDER === 'dev-watermark' ? 'dev-watermark' : 'none',
+    },
   };
+
+  if (nodeEnvRaw === 'test' && config.photos.sweepSeconds !== 0) {
+    // در تست‌ها پاک‌سازی خودکار نباید بی‌خبر اجرا شود؛ تست، سرویس را مستقیم صدا می‌زند.
+    config.photos.sweepSeconds = 0;
+  }
 
   if (issues.length > 0) throw new ConfigError(issues);
   return { config, warnings };

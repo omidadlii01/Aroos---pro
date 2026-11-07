@@ -51,6 +51,8 @@ export default function AdminPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('pending_review');
+  const [purgeState, setPurgeState] = useState<{ purged: number; failed: number } | null>(null);
+  const [isPurging, setPurging] = useState(false);
 
   const load = useCallback(
     async (status: string) => {
@@ -141,6 +143,25 @@ export default function AdminPage() {
     setReason('');
     setNotice('مزون رد شد و دلیل برای مالک نمایش داده می‌شود.');
     await load(statusFilter);
+  }
+
+  async function purgePhotos() {
+    setPurging(true);
+    setActionError(null);
+    setNotice(null);
+    const result = await apiFetch<{ purged: number; failed: number }>(
+      '/api/v1/admin/maintenance/photos-purge',
+      { method: 'POST' },
+    );
+    setPurging(false);
+    if (!result.ok) {
+      setActionError(result.message);
+      return;
+    }
+    setPurgeState(result.data);
+    setNotice(
+      `پاک‌سازی اجرا شد: ${result.data.purged.toLocaleString('fa-IR')} عکس منقضی حذف شد.`,
+    );
   }
 
   const isAdmin = me?.user.roles.includes('platform_admin') ?? false;
@@ -351,6 +372,28 @@ export default function AdminPage() {
                 </li>
               ))}
             </ul>
+          </section>
+        ) : null}
+
+        {isAdmin ? (
+          <section className="mt-8 rounded-2xl border border-sand-200 bg-white p-5">
+            <h2 className="text-sm font-bold text-slate-900">نگه‌داری داده</h2>
+            <p className="mt-1 text-xs leading-6 text-slate-600">
+              عکس‌های عروس پس از پایان مهلت نگه‌داری (۹۰ روز) باید حذف شوند. این عملیات
+              به‌صورت خودکار هر ساعت اجرا می‌شود و در محیط واقعی با cron
+              (<code dir="ltr">npm run photos:sweep</code>) هم قابل اجراست؛ اجرای دستی در audit ثبت می‌شود.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button size="sm" variant="secondary" isLoading={isPurging} onClick={() => void purgePhotos()}>
+                اجرای پاک‌سازی منقضی‌ها
+              </Button>
+              {purgeState ? (
+                <span className="text-xs text-slate-600">
+                  حذف‌شده: {purgeState.purged.toLocaleString('fa-IR')} · خطا:{' '}
+                  {purgeState.failed.toLocaleString('fa-IR')}
+                </span>
+              ) : null}
+            </div>
           </section>
         ) : null}
 

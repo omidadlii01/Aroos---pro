@@ -58,6 +58,11 @@ export class AdminController {
     return this.admin.reject(user.sub, boutiqueId, input as never);
   }
 
+  @Post('maintenance/photos-purge')
+  async purgePhotos(@CurrentUser() user: AccessTokenPayload): Promise<{ purged: number; failed: number }> {
+    return this.admin.purgeExpiredPhotos(user.sub);
+  }
+
   @Get('audit')
   async audit(@Query() query: Record<string, unknown>): Promise<{ items: AdminAuditView[] }> {
     const parsed = parseWith(AdminAuditQuerySchema, query);
