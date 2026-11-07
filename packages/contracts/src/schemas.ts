@@ -378,5 +378,28 @@ export type TryOnView = {
   statusReason: string | null;
   provider: string;
   aiConfigured: boolean;
+  /** خروجی آزمایشی/واترمارک‌دار است، نه خروجی واقعی AI. */
+  isDevOutput: boolean;
+  /** فقط وقتی نتیجه آماده است وجود دارد. */
+  result?: TryOnResult;
+  /** جایگاه تقریبی در صف (فقط برای status=queued). */
+  queuePosition?: number;
   createdAt: string;
 };
+
+/** برچسب اجباری خروجی آزمایشی — هرگز نباید به‌عنوان خروجی واقعی AI نمایش داده شود. */
+export const DEV_TRYON_LABEL_FA =
+  'خروجی آزمایشی (واترمارک‌دار) — این تصویر خروجی واقعی هوش مصنوعی نیست و برای سفارش یا تأیید تناسب معتبر نیست.';
+
+export const TryOnViewSchemaNote = 'queuePosition فقط برای وضعیت queued معنا دارد.';
+
+export type TryOnResult = {
+  url: string;
+  expiresAt: string;
+  isDevOutput: boolean;
+  labelFa: string | null;
+};
+
+export const TryOnDrainSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(20).default(5),
+});

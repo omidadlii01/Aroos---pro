@@ -4,6 +4,7 @@ import {
   AdminAuditQuerySchema,
   AdminBoutiqueListQuerySchema,
   BoutiqueRejectSchema,
+  TryOnDrainSchema,
   type AdminAuditView,
   type AdminBoutiqueView,
   type AdminOverview,
@@ -61,6 +62,15 @@ export class AdminController {
   @Post('maintenance/photos-purge')
   async purgePhotos(@CurrentUser() user: AccessTokenPayload): Promise<{ purged: number; failed: number }> {
     return this.admin.purgeExpiredPhotos(user.sub);
+  }
+
+  @Post('maintenance/tryon-drain')
+  async drainTryOn(
+    @CurrentUser() user: AccessTokenPayload,
+    @Query() query: Record<string, unknown>,
+  ): Promise<Awaited<ReturnType<AdminService['drainTryOnQueue']>>> {
+    const parsed = parseWith(TryOnDrainSchema, query);
+    return this.admin.drainTryOnQueue(user.sub, (parsed as { limit: number }).limit);
   }
 
   @Get('audit')

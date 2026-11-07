@@ -69,6 +69,25 @@ export function TryOnPanel({ dressId }: { dressId: string }) {
       return;
     }
     setResult(response.data);
+
+    // اگر درخواست در صف است، تا رسیدن به نتیجه نهایی وضعیت را دنبال می‌کنیم.
+    if (response.data.status === 'queued' || response.data.status === 'processing') {
+      await pollUntilDone(response.data.id);
+    }
+  }
+
+  /**
+   * پیگیری وضعیت صف. حداکثر ~۳۰ ثانیه؛ پس از آن پیام «در صف ماند» داده می‌شود
+   * و هیچ نتیجه‌ای نمایش داده نمی‌شود (چون هنوز وجود ندارد).
+   */
+  async function pollUntilDone(requestId: string) {
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const latest = await apiFetch<TryOnView>(`/api/v1/tryon/${requestId}`);
+      if (!latest.ok) return;
+      setResult(latest.data);
+      if (latest.data.status !== 'queued' && latest.data.status !== 'processing') return;
+    }
   }
 
   return (
@@ -131,7 +150,7 @@ export function TryOnPanel({ dressId }: { dressId: string }) {
       ) : null}
 
       {result ? (
-        <div className="mt-3">
+        <div className="mt-3 space-y-3">
           {result.status === 'blocked' ? (
             <Alert tone="warning" title="هیچ تصویری ساخته نشد">
               <span>
@@ -143,11 +162,43 @@ export function TryOnPanel({ dressId }: { dressId: string }) {
                 پیگیری کند؛ هیچ خروجی جعلی نمایش داده نمی‌شود.
               </span>
             </Alert>
-          ) : (
+          ) : null}
+
+          {result.status === 'queued' || result.status === 'processing' ? (
             <Alert tone="info" title={`وضعیت: ${TRYON_STATUS_LABELS_FA[result.status]}`}>
-              درخواست شما ثبت شد.
+              {result.queuePosition
+                ? `جایگاه تقریبی شما در صف: ${result.queuePosition.toLocaleString('fa-IR')}.`
+                : 'درخواست شما در حال پردازش است.'}{' '}
+              این صفحه وضعیت را به‌صورت خودکار به‌روزرسانی می‌کند؛ در صورت طولانی شدن، بعداً
+              دوباره سر بزنید.
             </Alert>
-          )}
+          ) : null}
+
+          {result.status === 'failed' ? (
+            <Alert tone="error" title="پردازش ناموفق بود">
+              {result.statusReason ??
+                'پردازش انجام نشد. لطفاً دوباره تلاش کنید؛ در صورت تکرار با پشتیبانی تماس بگیرید.'}
+            </Alert>
+          ) : null}
+
+          {result.status === 'succeeded' && result.result ? (
+            <div className="rounded-2xl border border-sand-200 p-3">
+              {result.result.isDevOutput ? (
+                <Alert tone="warning" title="خروجی آزمایشی — خروجی واقعی هوش مصنوعی نیست">
+                  {result.result.labelFa}
+                </Alert>
+              ) : null}
+              <img
+                src={result.result.url}
+                alt="نتیجه امتحان مجازی"
+                className="mt-3 w-full rounded-xl border border-sand-200 bg-sand-100 object-contain"
+              />
+              <p className="mt-2 text-[11px] leading-6 text-slate-600">
+                این تصویر یک پیش‌نمایش بصری است؛ اندازه، جنس پارچه و نتیجه دوخت را تضمین نمی‌کند.
+                سفارش قطعی فقط پس از پرو و تأیید حضوری مزون ثبت می‌شود.
+              </p>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

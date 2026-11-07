@@ -12,6 +12,7 @@ import {
 
 import { AuditService } from '../audit/audit.service.js';
 import { PhotosRetentionService } from '../photos/photos-retention.service.js';
+import { TryOnWorkerService, type DrainResult } from '../tryon/tryon-worker.service.js';
 import { AppError } from '../common/errors.js';
 import { SQL_RUNNER } from '../database/database.module.js';
 import type { SqlClient, SqlRunner } from '../database/sql.js';
@@ -63,7 +64,23 @@ export class AdminService {
     @Inject(SQL_RUNNER) private readonly runner: SqlRunner,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(PhotosRetentionService) private readonly retention: PhotosRetentionService,
+    @Inject(TryOnWorkerService) private readonly tryonWorker: TryOnWorkerService,
   ) {}
+
+  /**
+   * اجرای دستی صف امتحان مجازی (همان کد worker).
+   * در محیط واقعی worker خودکار اجرا می‌شود؛ این مسیر برای پشتیبانی و تست دود است.
+   */
+  async drainTryOnQueue(adminUserId: string, limit: number): Promise<DrainResult> {
+    const result = await this.tryonWorker.drain(limit);
+    await this.audit.record({
+      actorUserId: adminUserId,
+      action: 'tryon.queue_drained',
+      entityType: 'tryon_request',
+      metadata: { ...result },
+    });
+    return result;
+  }
 
   /**
    * اجرای دستی پاک‌سازی عکس‌های منقضی توسط ادمین.

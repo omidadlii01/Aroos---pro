@@ -46,6 +46,8 @@ describe('سلامت سرویس و وضعیت شفاف قابلیت‌ها', () 
     expect(response.body.otpDelivery).toBe('dev-log');
     expect(response.body.payments.status).toBe('disabled');
     expect(response.body.ai.status).toBe('not-configured');
+    expect(response.body.ai.realOutput).toBe(false);
+    expect(response.body.ai.provider).toBe('none');
     expect(response.body.sms.status).toBe('blocked');
   });
 

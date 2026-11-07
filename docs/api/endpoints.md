@@ -121,13 +121,20 @@
 
 سیاست داده: نگه‌داری پیش‌فرض **۹۰ روز** (`PHOTO_RETENTION_DAYS`) و ذخیره `retention_until` در هر رکورد؛ رضایت با نسخه و زمان ثبت می‌شود. هیچ مسیر عمومی یا `media` به این عکس‌ها دسترسی ندارد (تست‌شده).
 
-## امتحان مجازی (وضعیت صریح)
+## امتحان مجازی — صف پردازش + آداپتور (فاز ۷)
+
+> ⚠️ **هیچ مدل هوش مصنوعی واقعی متصل نیست.** تنها آداپتور موجود `AI_TRYON_PROVIDER=dev-watermark` است که عکس و تصویر لباس را با `sharp` کنار هم می‌چسباند و واترمارک دائمی «DEV PREVIEW — NOT REAL AI OUTPUT» روی آن می‌گذارد. این خروجی برای سفارش، تأیید تناسب یا تبلیغات معتبر نیست.
 
 | مسیر | توضیح | خطاهای مهم |
 | --- | --- | --- |
-| `POST /tryon` | بدنه `{ photoId, dressId }`؛ عکس باید متعلق به همان کاربر و لباس باید `published` از مزون `approved` باشد. در این فاز پاسخ همیشه `status: "blocked"` با دلیل فارسی و `aiConfigured: false` است و **هیچ تصویری ساخته نمی‌شود** | `401`، `404` (عکس/لباس)، `400` |
+| `POST /tryon` | بدنه `{ photoId, dressId }`؛ عکس باید متعلق به همان کاربر و لباس باید `published` از مزون `approved` باشد. با provider پیکربندی‌شده → `status: "queued"` + `queuePosition`; با `AI_TRYON_PROVIDER=none` → `status: "blocked"` و `aiConfigured: false` و **هیچ تصویری ساخته نمی‌شود** | `401`، `404` (عکس/لباس)، `400` |
 | `GET /tryon` | درخواست‌های خود کاربر (۵۰ مورد آخر) | `401` |
-| `GET /tryon/:id` | فقط درخواست خود کاربر؛ درخواست دیگران `404` | `401`، `404` |
+| `GET /tryon/:id` | فقط درخواست خود کاربر؛ درخواست دیگران `404`. شامل `status`, `isDevOutput`, `queuePosition`, و در حالت موفق `result.url`/`result.labelFa` (تعداد تلاش‌ها فقط در دیتابیس ستون `attempts` نگه داشته می‌شود و در پاسخ API نیست) | `401`، `404` |
+| `GET /tryon/:id/result?expires=&token=` | **بدون `Authorization`** (برای `<img>`)؛ اعتبارسنجی با توکن HMAC کوتاه‌عمر. `200 image/jpeg` + هدر `x-bridalos-dev-output: true` + `Cache-Control: private, max-age=60` | `403` توکن جعلی/منقضی یا وضعیت ناموفق، `404` فایل حذف‌شده |
+
+وضعیت‌ها: `blocked` (بدون provider) → `queued` → `processing` → `succeeded` یا `failed`. خطای موقت تا `TRYON_MAX_ATTEMPTS` (پیش‌فرض ۲) دوباره در صف می‌ماند؛ پس از آن `failed` با `errorMessage` فارسی.
+
+پردازش: `TryOnWorkerService` هر `TRYON_WORKER_INTERVAL_SECONDS` (پیش‌فرض ۵، صفر=خاموش، در تست خاموش) ردیف‌های `queued` را با `FOR UPDATE SKIP LOCKED` برمی‌دارد، پس چند نمونه API می‌توانند روی یک دیتابیس کار کنند. خروجی در مسیر خصوصی `tryon/<userId>/<id>.jpg` ذخیره می‌شود.
 
 ## نگه‌داری و پاک‌سازی داده
 
@@ -136,6 +143,7 @@
 | interval درون API | هر `PHOTO_RETENTION_SWEEP_SECONDS` (پیش‌فرض ۳۶۰۰، صفر=خاموش، در تست خاموش) عکس‌های گذشته از `retention_until` را حذف می‌کند |
 | `npm run photos:sweep` | همان منطق برای cron در محیط واقعی (migration + حذف رکورد و فایل) |
 | `POST /admin/maintenance/photos-purge` | اجرای دستی توسط `platform_admin`؛ نتیجه در audit با اکشن `photos.retention_purged` ثبت می‌شود |
+| `POST /admin/maintenance/tryon-drain?limit=1..20` | اجرای دستی یک دور صف امتحان مجازی (پیش‌فرض ۵)؛ پاسخ `{claimed, succeeded, failed, requeued}` و audit با اکشن `tryon.queue_drained` |
 
 ## سلامت و وضعیت
 
@@ -143,7 +151,7 @@
 | --- | --- |
 | `GET /healthz` | `{ status, version, uptimeSeconds, checks: { database: { status, driver, latencyMs } } }` (۵۰۳ اگر DB خطا) |
 | `GET /readyz` | `{ ready: boolean }` |
-| `GET /api/v1/meta` | وضعیت صریح `payments`/`ai`/`sms`/`otpDelivery` |
+| `GET /api/v1/meta` | وضعیت صریح `payments`/`ai`/`sms`/`otpDelivery`؛ بلوک `ai` همیشه `realOutput: false` دارد و با آداپتور آزمایشی `experimentalAdapter: true` برمی‌گرداند |
 
 ## کدهای خطا
 

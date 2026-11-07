@@ -49,6 +49,8 @@ export class HealthController {
   /** وضعیت شفاف قابلیت‌ها برای UI — هیچ قابلیت غیرفعالی «فعال» نشان داده نمی‌شود. */
   @Get('api/v1/meta')
   meta(): Record<string, unknown> {
+    const tryonProvider = this.config.ai.tryonProvider;
+    const devTryonAdapter = tryonProvider === 'dev-watermark';
     return {
       name: 'BridalOS API',
       version: process.env.npm_package_version ?? '0.1.0',
@@ -58,8 +60,12 @@ export class HealthController {
       payments: { status: 'disabled', reason: 'بدون درگاه پرداخت و تأیید مالک؛ فقط آداپتور sandbox در فاز ۱۳' },
       ai: {
         status: 'not-configured',
-        provider: this.config.ai.tryonProvider,
-        reason: 'هیچ provider واقعی متصل نیست؛ درخواست‌های امتحان مجازی با وضعیت blocked ثبت می‌شوند',
+        provider: tryonProvider,
+        realOutput: false,
+        experimentalAdapter: devTryonAdapter,
+        reason: devTryonAdapter
+          ? 'فقط آداپتور آزمایشی dev-watermark متصل است؛ خروجی واترمارک‌دار توسعه است و هوش مصنوعی واقعی نیست'
+          : 'هیچ provider واقعی متصل نیست؛ درخواست‌های امتحان مجازی با وضعیت blocked ثبت می‌شوند',
       },
       sms: { status: 'blocked', reason: 'آداپتور پیامک واقعی نیازمند کلید و تأیید مالک است' },
     };

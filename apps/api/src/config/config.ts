@@ -58,6 +58,10 @@ export type AppConfig = {
   ai: {
     /** ارائه‌دهنده امتحان مجازی؛ `none` یعنی هیچ سرویسی متصل نیست. */
     tryonProvider: 'none' | 'dev-watermark';
+    /** فاصله اجرای worker صف؛ صفر = خاموش (تست‌ها و اجرای دستی). */
+    workerIntervalSeconds: number;
+    /** حداکثر تلاش برای هر درخواست پیش از اعلام failed. */
+    maxAttempts: number;
   };
 };
 
@@ -208,8 +212,15 @@ export function loadConfig(env: Env): ConfigLoadResult {
     },
     ai: {
       tryonProvider: env.AI_TRYON_PROVIDER === 'dev-watermark' ? 'dev-watermark' : 'none',
+      workerIntervalSeconds: int('TRYON_WORKER_INTERVAL_SECONDS', 5, 0, 300),
+      maxAttempts: int('TRYON_MAX_ATTEMPTS', 2, 1, 5),
     },
   };
+
+  if (nodeEnvRaw === 'test') {
+    // worker خودکار در تست‌ها خاموش است تا نتیجه قطعی و قابل بازتولید بماند.
+    config.ai.workerIntervalSeconds = 0;
+  }
 
   if (nodeEnvRaw === 'test' && config.photos.sweepSeconds !== 0) {
     // در تست‌ها پاک‌سازی خودکار نباید بی‌خبر اجرا شود؛ تست، سرویس را مستقیم صدا می‌زند.
